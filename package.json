@@ -1,0 +1,37 @@
+{
+  "name": "beyo-model-mapper",
+  "version": "0.0.0",
+  "description": "Data mappers for beyo models",
+  "author": "Yanick Rochon <yanick.rochon@gmail.com>",
+  "main": "index.js",
+  "keywords": [
+    "beyo",
+    "model",
+    "mapper",
+    "data"
+  ],
+  "homepage": "https://github.com/beyo/model-mapper",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beyo/model-mapper"
+  },
+  "bugs": {
+    "url": "https://github.com/beyo/model-mapper/issues"
+  },
+  "scripts": {
+    "test": "mocha --harmony"
+  },
+  "dependencies": {
+    "beyo-model": "latest",
+    "co-suspend": "^0.1.0",
+    "error-factory": "latest",
+    "pg.js": "^2.11.1"
+  },
+  "devDependencies": {
+    "mocha": "^1.18.2",
+    "co-mocha": "0.0.2",
+    "semicov": "^0.1.1-2",
+    "should": "^3.2.0"
+  },
+  "license": "MIT"
+}
