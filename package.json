@@ -23,9 +23,7 @@
   },
   "dependencies": {
     "beyo-model": "latest",
-    "co-suspend": "^0.1.0",
-    "error-factory": "latest",
-    "pg.js": "^2.11.1"
+    "error-factory": "latest"
   },
   "devDependencies": {
     "mocha": "^1.18.2",

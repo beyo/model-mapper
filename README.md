@@ -3,6 +3,72 @@
 Data mappers for beyo models
 
 
+## Preamble
+
+This module is *not* an ORM. It is a DI abstraction layer for models, but still
+allowing projects to manually access the persistence layer and optimize data access.
+
+
+## Install
+
+```
+npm install beyo-model-mapper
+```
+
+
+## Usage
+
+```javascript
+// declare
+var mapper = Mapper.define('Foo', {    // define "FooMapper"
+  model: {
+    type: 'Foo',       // must be a defined model (see beyo-model)
+    methods: {
+      save: function * () {
+        if (this is a new model) {
+          return yield mapper.create(this);
+        } else {
+          return yield mapper.update(this);
+        }
+      }
+    }
+  },
+  connection: 'postgre',
+  options: {
+    tableName: 'inv_items'
+  },
+  methods: {
+    create: createModel,
+    find: findModel,
+    findAll: findAllModels,
+    update: updateModel,
+    delete: deleteModel
+  }
+});
+
+
+function * createModel(model) {
+  // create new model and return it
+}
+
+function * findModel(filter) {
+  // find the first model matching `filter` and return it
+}
+
+function * findAllModels(filter) {
+  // find all models matching `filter` and return a Collection
+}
+
+function * updateModel(model) {
+  // update model `model` and return it
+}
+
+function * deleteModel(model) {
+  // delete model `model` and return success state
+}
+```
+
+
 ## Contribution
 
 All contributions welcome! Every PR **must** be accompanied by their associated
