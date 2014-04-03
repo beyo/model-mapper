@@ -8,16 +8,18 @@ var Mapper = require('../../lib/mapper');
 
 describe('Mapper Test', function () {
 
+  var modelOptions = {
+    attributes: {
+      id: 'int',
+      text: 'text'
+    }
+  };
+
   before(function () {
-    Model.define('Test', {
-      attributes: {
-        id: 'int',
-        text: 'text'
-      }
-    });
+    Model.define('Test', modelOptions);
 
     Connections.registerAdapter('test', function * () {
-
+      return 'TestAdapter';
     });
 
     Connections.define('test', 'test://');
@@ -25,10 +27,17 @@ describe('Mapper Test', function () {
 
 
   it('should initialize', function () {
-    var mapper = Mapper.define('Test1');
+    var mapper;
 
+    Mapper.isDefined('Test1').should.be.false;
+
+    (function () { Mapper.get('Test1'); }).should.throw();
+
+    mapper = Mapper.define('Test1');
     mapper.should.be.an.Object.and.be.instanceof(EventEmitter);
     mapper.__proto__.constructor.name.should.equal('Test1Mapper');
+
+    Mapper.isDefined('Test1').should.be.true;
   });
 
   it('should fail initializing', function () {
@@ -72,6 +81,7 @@ describe('Mapper Test', function () {
     [
       undefined, false, true, null, 0, '', /foo/, {}, [], function () {}
     ].forEach(function (mapperName) {
+      (function () { Mapper.isDefined(mapperName); }).should.throw();
       (function () { Mapper.get(mapperName); }).should.throw();
     });
   });
@@ -112,14 +122,19 @@ describe('Mapper Test', function () {
       }
     });
 
+    mapper.Model.mapper.should.equal(mapper);
+
     var model = new mapper.Model({ id: 1, text: 'Hello world' });
 
     model.should.be.an.Object.and.be.instanceof(Model.get('Test'));
+    model._mapper.should.equal(mapper);
 
     model.foo('Hello world!');
   });
 
   it('should fail defining model', function () {
+
+    Model.define('Test6', modelOptions);
 
     (function () {
       Mapper.define('Test6a', {
@@ -130,8 +145,7 @@ describe('Mapper Test', function () {
     (function () {
       Mapper.define('Test6b', {
         model: {
-          type: 'InvalidType',
-          methods: true
+          type: 'InvalidType'
         }
       });
     }).should.throw();
@@ -139,31 +153,39 @@ describe('Mapper Test', function () {
     (function () {
       Mapper.define('Test6c', {
         model: {
-          type: 'Invalid Type',
+          type: 'Test6',
           methods: true
         }
       });
-    }).should.throw();
+    }).should.throw('Model methods must be an object');
+
+    (function () {
+      Mapper.define('Test6d', {
+        model: {
+          type: 'Test',
+        }
+      });
+    }).should.throw('Model `Test` already has mapper');
 
     (function () {
       Mapper.define('Test6e', {
         model: {
-          type: 'Test',
-          methods: true
+          type: 'Test6',
+          methods: []
         }
       });
-    }).should.throw();
+    }).should.throw('Model methods must be an object');
 
     (function () {
       Mapper.define('Test6f', {
         model: {
-          type: 'Test',
+          type: 'Test6',
           methods: {
             foo: 'Boo!'
           }
         }
       });
-    }).should.throw();
+    }).should.throw('Method `foo` must be a function');
 
   });
 
@@ -175,12 +197,29 @@ describe('Mapper Test', function () {
     mapper.options.should.be.Boolean.and.equal(true);
   });
 
-  it('should receive a valid connection');
+  it('should receive a valid connection', function * () {
+    var mapper = Mapper.define('Test8a', {
+      connection: 'test'
+    });
+    var adapter;
+
+    mapper.should.have.property('_connectionName').and.be.equal('test');
+    mapper.should.have.property('getAdapter').and.be.a.Function;
+
+    adapter = yield (mapper.getAdapter)();
+    adapter.should.be.a.String.and.equal('TestAdapter');
+  });
 
   it('should fail with an invalid connection', function () {
-
-
-
+    [
+      'invalid connection'
+    ].forEach(function (connection, i) {
+      (function () {
+        Mapper.define('Test9' + i, {
+          connection: connection
+        });
+      }).should.throw();
+    });
   });
 
 });
