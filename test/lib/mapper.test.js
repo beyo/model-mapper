@@ -68,7 +68,13 @@ describe('Mapper Test', function () {
     Mapper.get('Test3').should.equal(mapper);
   });
 
-  it('should fail returning mapper');
+  it('should fail returning mapper', function () {
+    [
+      undefined, false, true, null, 0, '', /foo/, {}, [], function () {}
+    ].forEach(function (mapperName) {
+      (function () { Mapper.get(mapperName); }).should.throw();
+    });
+  });
 
   it('should have operations', function () {
     var mapper = Mapper.define('Test4', {
@@ -116,13 +122,13 @@ describe('Mapper Test', function () {
   it('should fail defining model', function () {
 
     (function () {
-      Mapper.define('Test6', {
+      Mapper.define('Test6a', {
         model: 'Test'
       });
     }).should.throw();
 
     (function () {
-      Mapper.define('Test6', {
+      Mapper.define('Test6b', {
         model: {
           type: 'InvalidType',
           methods: true
@@ -131,7 +137,7 @@ describe('Mapper Test', function () {
     }).should.throw();
 
     (function () {
-      Mapper.define('Test7', {
+      Mapper.define('Test6c', {
         model: {
           type: 'Invalid Type',
           methods: true
@@ -140,7 +146,7 @@ describe('Mapper Test', function () {
     }).should.throw();
 
     (function () {
-      Mapper.define('Test8', {
+      Mapper.define('Test6e', {
         model: {
           type: 'Test',
           methods: true
@@ -149,7 +155,7 @@ describe('Mapper Test', function () {
     }).should.throw();
 
     (function () {
-      Mapper.define('Test8', {
+      Mapper.define('Test6f', {
         model: {
           type: 'Test',
           methods: {
@@ -158,6 +164,22 @@ describe('Mapper Test', function () {
         }
       });
     }).should.throw();
+
+  });
+
+  it('should pass options', function () {
+    var mapper = Mapper.define('Test7', {
+      options: true
+    });
+
+    mapper.options.should.be.Boolean.and.equal(true);
+  });
+
+  it('should receive a valid connection');
+
+  it('should fail with an invalid connection', function () {
+
+
 
   });
 
