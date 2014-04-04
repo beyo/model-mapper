@@ -25,13 +25,16 @@
     "beyo-model": "latest",
     "error-factory": "latest",
     "semver": "^2.2.1",
-    "co-fs": "^1.2.0"
+    "co-fs": "^1.2.0",
+    "semicov": "^0.1.1",
+    "co": "^3.0.5"
   },
   "devDependencies": {
     "mocha": "^1.18.2",
     "co-mocha": "0.0.2",
     "semicov": "^0.1.1-2",
-    "should": "^3.2.0"
+    "should": "^3.2.0",
+    "co-suspend": "^0.1.0"
   },
   "license": "MIT"
 }
