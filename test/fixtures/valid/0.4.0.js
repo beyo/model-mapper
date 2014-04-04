@@ -1,5 +1,4 @@
 
-module.exports.version = '0.4.0';
 module.exports.satisfies = '>=0.4.0';
 
 module.exports.evolve = function * (mapper) {
