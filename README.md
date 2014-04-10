@@ -115,8 +115,31 @@ be extended with a static property `mapper, and the prototype with a property
   [Connections.define](#connections-api)), to the
   mapper's prototype
 * **methods**:*{Object}* - an object mapping the methods to add to the mapper's
-  prototype. Typically, all the basic CRUD methods should be defined here. For
-  example, `create`, `find`, `update`, and `delete`.
+  prototype. Typically, all the basic CRUD methods should be defined here. These
+  methods should be, `create`, `find`, `findAll`, `update`, `delete`, and `deleteAll`.
+
+
+**NOTE**: all basic CRUD methods must be define, or the application may throw
+an `AbstractMapperMethodException` error. More methods may also be defined.
+
+
+### CRUD methods
+
+All CRUD methods must be yieldable.
+
+* **Create** - create a new model.
+  * `create(model)` - receive a model as argument, and should return it
+* **Read** - find one or more models given a filter and sorter arguments
+  * `find(filter, sorter)` - receive a filter and sorter and should return the
+    first model found.
+  * `findAll(filter, sorter)` - receive a filter and sorter and should return a
+    `Collection` of models found.
+* **Update** - update the specified model
+  * `update(model)` - receive the model to update and return it
+* **Delete** - delete the specified model(s)
+  * `delete(model)` - receive the model to delete and return a boolean status
+  * `deleteAll(filter)` - receive a filter and delete all matching models, and
+    return the number of models deleted.
 
 
 ## Connections
