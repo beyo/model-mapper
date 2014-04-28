@@ -222,4 +222,9 @@ describe('Mapper Test', function () {
     });
   });
 
+  it('should register with namespace', function () {
+    Mapper.define('namespace.test.Test9');
+
+  });
+
 });

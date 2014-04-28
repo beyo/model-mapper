@@ -1,6 +1,6 @@
 {
   "name": "beyo-model-mapper",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Data mappers for beyo models",
   "author": "Yanick Rochon <yanick.rochon@gmail.com>",
   "main": "index.js",
@@ -26,16 +26,14 @@
     "error-factory": "latest",
     "semver": "^2.2.1",
     "co-fs": "^1.2.0",
-    "semicov": "^0.1.1",
     "co": "^3.0.5",
-    "should": "^3.3.1"
+    "co-suspend": "latest"
   },
   "devDependencies": {
     "mocha": "^1.18.2",
     "co-mocha": "0.0.2",
-    "semicov": "^0.1.1-2",
-    "should": "^3.2.0",
-    "co-suspend": "^0.1.0"
+    "semicov": "^0.1.1",
+    "should": "^3.3.1"
   },
   "license": "MIT"
 }
