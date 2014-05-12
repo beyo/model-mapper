@@ -1,12 +1,17 @@
 
-var EventEmitter = require('events').EventEmitter;
-var Model = require('beyo-model').Model;
-//var Types = require('beyo-model').Types;
-
-var Connections = require('../../lib/connections');
-var Mapper = require('../../lib/mapper');
-
 describe('Mapper Test', function () {
+
+  var EventEmitter = require('events').EventEmitter;
+  var Model = require('beyo-model').Model;
+  var co = require('co');
+  var suspend = require('co-suspend');
+  //var Types = require('beyo-model').Types;
+
+  var Connections = require('../../lib/connections');
+  var Mapper = require('../../lib/mapper');
+
+  this.timeout(3000);
+
 
   var modelOptions = {
     attributes: {
@@ -26,53 +31,84 @@ describe('Mapper Test', function () {
   });
 
 
-  it('should initialize', function () {
+  it('should initialize', function * () {
     var mapper;
 
     Mapper.isDefined('Test1').should.be.false;
 
     (function () { Mapper.get('Test1'); }).should.throw();
 
-    mapper = Mapper.define('Test1');
+    mapper = yield Mapper.define('Test1');
     mapper.should.be.an.Object.and.be.instanceof(EventEmitter);
     mapper.__proto__.constructor.name.should.equal('Test1Mapper');
 
     Mapper.isDefined('Test1').should.be.true;
   });
 
-  it('should fail initializing', function () {
+  it('should fail initializing', function * () {
+    var markers = [];
+    function newMarker() {
+      var marker = suspend();
+      markers.push(marker.wait());
+      return marker;
+    }
+
     [
       undefined, null, false, true, '', 'INVLID NAME', {}, [], function () {}
     ].forEach(function (mapperName) {
-      (function () { Mapper.define(mapperName); }).should.throw();
+      var marker = newMarker();
+      co(function * () {
+        yield Mapper.define(mapperName);
+      })(function (err) {
+        err.should.be.an.Error;
+        marker.resume();
+      });
     });
 
-    (function () {
-      Mapper.define('Test1a', {
-        methods: 'fail'
+    +function (marker) {
+      co(function * () {
+        yield Mapper.define('Test1a', {
+          methods: 'fail'
+        });
+      })(function (err) {
+        err.should.be.an.Error;
+        marker.resume();
       });
-    }).should.throw();
+    }(newMarker());
 
-    (function () {
-      Mapper.define('Test1b', {
-        methods: {
-          foo: 'Test fail'
-        }
+    +function (marker) {
+      co(function * () {
+        yield Mapper.define('Test1b', {
+          methods: {
+            foo: 'Test fail'
+          }
+        });
+      })(function (err) {
+        err.should.be.an.Error;
+        marker.resume();
       });
-    }).should.throw();
+    }(newMarker());
 
+    yield markers;
   });
 
-  it('should not override another mapper', function () {
-    Mapper.define('Test2');
+  it('should not override another mapper', function * () {
+    var marker = suspend();
 
-    (function () {
-      Mapper.define('Test2');
-    }).should.throw();
+    yield Mapper.define('Test2');
+
+    co(function * () {
+      yield Mapper.define('Test2');
+    })(function (err) {
+      err.should.be.an.Error;
+      marker.resume();
+    });
+
+    yield marker.wait();
   });
 
-  it('should return defined mapper', function () {
-    var mapper = Mapper.define('Test3');
+  it('should return defined mapper', function * () {
+    var mapper = yield Mapper.define('Test3');
 
     Mapper.get('Test3').should.equal(mapper);
   });
@@ -86,31 +122,38 @@ describe('Mapper Test', function () {
     });
   });
 
-  it('should have operations', function () {
-    var mapper = Mapper.define('Test4', {
+  it('should have operations', function * () {
+    var mapper = yield Mapper.define('Test4', {
       methods: {
         foo: fooOperation,
         bar: barOperation
       }
     });
     var testObj = { hello: 'World', suffx: '!' };
+    var fooInvoked = false;
+    var barInvoked = false;
 
     function fooOperation() {
       this.should.equal(mapper);
+      fooInvoked = true;
     }
     function barOperation(a, b, c) {
       this.should.equal(mapper);
       a.should.be.a.Boolean.and.be.true;
       b.should.be.a.String.and.equal('Hello');
       c.should.be.an.Object.and.be.equal(testObj);
+      barInvoked = true;
     }
 
     mapper.foo();
     mapper.bar(true, 'Hello', testObj);
+
+    fooInvoked.should.be.true;
+    barInvoked.should.be.true;
   });
 
-  it('should define model', function () {
-    var mapper = Mapper.define('Test5', {
+  it('should define model', function * () {
+    var mapper = yield Mapper.define('Test5', {
       model: {
         type: 'Test',
         methods: {
@@ -122,6 +165,7 @@ describe('Mapper Test', function () {
       }
     });
 
+
     mapper.Model.mapper.should.equal(mapper);
 
     var model = new mapper.Model({ id: 1, text: 'Hello world' });
@@ -132,65 +176,107 @@ describe('Mapper Test', function () {
     model.foo('Hello world!');
   });
 
-  it('should fail defining model', function () {
+  it('should fail defining model', function * () {
+    var markers = [];
+    function newMarker() {
+      var marker = suspend();
+      markers.push(marker.wait());
+      return marker;
+    }
 
     Model.define('Test6', modelOptions);
 
-    (function () {
-      Mapper.define('Test6a', {
-        model: 'Test'
+    +function (marker) {
+      co(function * () {
+        yield Mapper.define('Test6a', {
+          model: 'Test'
+        });
+      })(function (err) {
+        err.should.be.an.Error;
+        marker.resume();
       });
-    }).should.throw();
+    }(newMarker());
 
-    (function () {
-      Mapper.define('Test6b', {
-        model: {
-          type: 'InvalidType'
-        }
-      });
-    }).should.throw();
-
-    (function () {
-      Mapper.define('Test6c', {
-        model: {
-          type: 'Test6',
-          methods: true
-        }
-      });
-    }).should.throw('Model methods must be an object');
-
-    (function () {
-      Mapper.define('Test6d', {
-        model: {
-          type: 'Test',
-        }
-      });
-    }).should.throw('Model `Test` already has mapper');
-
-    (function () {
-      Mapper.define('Test6e', {
-        model: {
-          type: 'Test6',
-          methods: []
-        }
-      });
-    }).should.throw('Model methods must be an object');
-
-    (function () {
-      Mapper.define('Test6f', {
-        model: {
-          type: 'Test6',
-          methods: {
-            foo: 'Boo!'
+    +function (marker) {
+      co(function * () {
+        return yield Mapper.define('Test6b', {
+          model: {
+            type: 'InvalidType.Test6b'
           }
-        }
+        });
+      })(function (err, mapper) {
+        Mapper.isMapper(mapper).should.be.true;
+        +function () { mapper.Model; }.should.throw();
+        marker.resume();
       });
-    }).should.throw('Method `foo` must be a function');
+    }(newMarker());
 
+    +function (marker) {
+      co(function * () {
+        yield Mapper.define('Test6c', {
+          model: {
+            type: 'Test6',
+            methods: true
+          }
+        });
+      })(function (err) {
+        err.should.be.an.Error;
+        err.message.should.equal('Model methods must be an object');
+        marker.resume();
+      });
+    }(newMarker());
+
+    +function (marker) {
+      co(function * () {
+        yield Mapper.define('Test6d', {
+          model: {
+            type: 'Test',
+          }
+        });
+      })(function (err) {
+        err.should.be.an.Error;
+        err.message.should.equal('Model `Test` already has mapper');
+        marker.resume();
+      });
+    }(newMarker());
+
+    +function (marker) {
+      co(function * () {
+        yield Mapper.define('Test6e', {
+          model: {
+            type: 'Test6',
+            methods: []
+          }
+        });
+      })(function (err) {
+        err.should.be.an.Error;
+        err.message.should.equal('Model methods must be an object');
+        marker.resume();
+      });
+    }(newMarker());
+
+    +function (marker) {
+      co(function * () {
+        yield Mapper.define('Test6f', {
+          model: {
+            type: 'Test6',
+            methods: {
+              foo: 'Boo!'
+            }
+          }
+        });
+      })(function (err) {
+        err.should.be.an.Error;
+        err.message.should.equal('Method `foo` must be a function');
+        marker.resume();
+      });
+    }(newMarker());
+
+    yield markers;
   });
 
-  it('should pass options', function () {
-    var mapper = Mapper.define('Test7', {
+  it('should pass options', function * () {
+    var mapper = yield Mapper.define('Test7', {
       options: true
     });
 
@@ -198,7 +284,7 @@ describe('Mapper Test', function () {
   });
 
   it('should receive a valid connection', function * () {
-    var mapper = Mapper.define('Test8a', {
+    var mapper = yield Mapper.define('Test8a', {
       connection: 'test'
     });
     var adapter;
@@ -206,25 +292,50 @@ describe('Mapper Test', function () {
     mapper.should.have.property('_connectionName').and.be.equal('test');
     mapper.should.have.property('getAdapter').and.be.a.Function;
 
-    adapter = yield (mapper.getAdapter)();
+    adapter = yield mapper.getAdapter();
     adapter.should.be.a.String.and.equal('TestAdapter');
   });
 
-  it('should fail with an invalid connection', function () {
+  it('should fail with an invalid connection', function * () {
+    var markers = [];
+    function newMarker() {
+      var marker = suspend();
+      markers.push(marker.wait());
+      return marker;
+    }
+
     [
       'invalid connection'
     ].forEach(function (connection, i) {
-      (function () {
-        Mapper.define('Test9' + i, {
-          connection: connection
+      +function (marker) {
+        co(function * () {
+          yield Mapper.define('Test9' + i, {
+            connection: connection
+          });
+        })(function (err) {
+          err.should.be.an.Error;
+          marker.resume();
         });
-      }).should.throw();
+      }(newMarker());
     });
+
+    yield markers;
   });
 
-  it('should register with namespace', function () {
-    Mapper.define('namespace.test.Test9');
+  it('should register with namespace', function * () {
+    yield Mapper.define('namespace.test.Test9');
+  });
 
+
+  it('should return early intance', function * () {
+    var mapper = yield Mapper.define('earlyIntance.mapper.Test10', {
+      model: {
+        type: 'earlyInstance.model.Test10'
+      }
+    });
+    var MapperModel = Model.define('earlyInstance.model.Test10', modelOptions);
+
+    mapper.Model.should.equal(MapperModel);
   });
 
 });
