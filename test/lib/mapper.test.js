@@ -338,4 +338,118 @@ describe('Mapper Test', function () {
     mapper.Model.should.equal(MapperModel);
   });
 
+
+  describe('Test events', function () {
+
+    it('should emit events', function (done) {
+      co(function * () {
+        var events = new EventEmitter();
+        var mapper = yield Mapper.define('TestEvent1', {
+          methods: {
+            foo: function (a, b, c) {
+              Model.isModel(a).should.be.true;
+              b.should.equal('Hello');
+              c.should.equal('World');
+            }
+          },
+          events: {
+            emitter: events,
+            pattern: 'foo.bar.{event}.{model.id}',
+            mapping: {
+              foo: 'fooEvent'
+            }
+          }
+        });
+        var model = Model.get('Test')({ id: 123 });
+
+        events.once('foo.bar.fooEvent.123', function (action, modelData) {
+          action.should.be.equal('fooEvent');
+          modelData.should.eql(model.toJson());
+          
+          setImmediate(done);  // finalize
+        });
+
+        mapper.foo(model, 'Hello', 'World');
+
+      })(function (err) {
+        err && console.log("*** ERR", err.stack);
+        assert.equal(err, null, 'err is null');
+      });
+    });
+
+    it('should lazy load emitter', function (done) {
+      co(function * () {
+        var events;
+
+        var mapper = yield Mapper.define('TestEvent2', {
+          methods: {
+            foo: function (a, b, c) {
+              a.should.equal('Hello');
+              b.should.equal('World');
+              Model.isModel(c).should.be.true;
+            }
+          },
+          events: {
+            get emitter() { return events; },
+            pattern: 'foo.bar.{event}.{model.id}',
+            mapping: {
+              foo: 'fooEvent'
+            }
+          }
+        });
+        var model = Model.get('Test')({ id: 456 });
+
+        events = new EventEmitter();
+
+        events.once('foo.bar.fooEvent.456', function (action, modelData) {
+          action.should.be.equal('fooEvent');
+          modelData.should.eql(model.toJson());
+          
+          setImmediate(done);  // finalize
+        });
+
+        // NOTE : model is not the first argument, and it should work still
+        mapper.foo('Hello', 'World', model);
+
+      })(function (err) {
+        err && console.log("*** ERR", err.stack);
+        assert.equal(err, null, 'err is null');
+      });
+    });
+
+    it('should use Mapper events', function (done) {
+      co(function * () {
+        var mapper = yield Mapper.define('TestEvent3', {
+          methods: {
+            foo: function (a, b, c) {
+              a.should.equal('Hello');
+              b.should.equal('World');
+            }
+          },
+          events: {
+            //pattern: 'foo.bar.{event}.{model.id}',
+            mapping: {
+              foo: 'fooEvent'
+            }
+          }
+        });
+
+        Mapper.once('mapper.TestEvent3.fooEvent', function (action, modelData) {
+          action.should.be.equal('fooEvent');
+          assert.equal(modelData, undefined);
+          
+          setImmediate(done);  // finalize
+        });
+
+        mapper.foo('Hello', 'World');
+
+      })(function (err) {
+        err && console.log("*** ERR", err.stack);
+        assert.equal(err, null, 'err is null');
+      });
+    });
+
+  });
+
+
 });

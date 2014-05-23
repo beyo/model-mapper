@@ -43,6 +43,15 @@ var mapper = Mapper.define('Foo', {    // define "FooMapper"
     findAll: findAllModels,
     update: updateModel,
     delete: deleteModel
+  },
+  events: {
+    /* emitter: ...  // instance of EventEmitter, or compatible interface */
+    /* pattern: ...  // event pattern string. Defaults to "mapper.{mapper}.{event}".
+    mapping: {
+      create: 'create',
+      update: 'update',
+      delete: 'delete'
+    }
   }
 });
 
@@ -105,9 +114,9 @@ be extended with a static property `mapper, and the prototype with a property
 `_mapper`, which returns the defining mapper instance for the model.
   * **type**:*{String}* - the model type (must be already defined, see
     [Model.define](https://github.com/beyo/model#models).
- * **methods**:*{Object}* - *(optional)* the methods to add to the model's prototype.
-   This option behaves like the mapper's `methods` options, but methods are added
-   to the model's prototype.
+  * **methods**:*{Object}* - *(optional)* the methods to add to the model's prototype.
+    This option behaves like the mapper's `methods` options, but methods are added
+    to the model's prototype.
 * **options**:*{mixed}* - any value that will be mixed with the mapper's prototype.
 * **connection**:*{String}* - the defined connection name. Defining this option
   will add `_connectionName`, the connection name as string, and `getAdapter()`, a
@@ -117,6 +126,21 @@ be extended with a static property `mapper, and the prototype with a property
 * **methods**:*{Object}* - an object mapping the methods to add to the mapper's
   prototype. Typically, all the basic CRUD methods should be defined here. These
   methods should be, `create`, `find`, `findAll`, `update`, `delete`, and `deleteAll`.
+* **events**:*{Object}* - an object to enable the mapper's methods to emit events. 
+  * **emitter** *(optional)* - the event emitter to use. The value may be any object
+    exposing an `emit` method. The value may also be a getter (i.e. `get emitter() { ... }`)
+    for lazy emitter loading, where the getter will be called every time a method
+    event is emitted. (Defaults to the Mapper's built-in event emitter. See 
+    [Mapper Events](#mapper-events).)
+  * **pattern** *(optional)* - a string representing the event name pattern to emit.
+    The default pattern, if none specified is `"mapper.{mapper}.{event}"`. The pattern
+    may include the tokens `{mapper}`, the mapper's `typeName`; `{event}`, the events
+    being fired, according to the event `mapping`; and `{model}` the model (if any)
+    provided. Any token may include a cannonical path, for example : `{model.id}`.
+  * **mapping** *(optional)* - an object consisting of method names (keys) with their
+    associated event--action--names. The default mapping defines the method/action as
+    `create`/`create`, `update`/`update`, `delete`/`delete`, and `deleteAll`/`delete`.
+    Specifying a mapping will not extend the default mapping, but override it.
 
 
 **NOTE**: all basic CRUD methods must be define, or the application may throw
@@ -125,7 +149,9 @@ an `AbstractMapperMethodException` error. More methods may also be defined.
 
 ### CRUD methods
 
-All CRUD methods must be yieldable.
+All CRUD methods must be yieldable. The following methods are defined abstract and
+must be defined to be used. Calling any of these methods without defining them
+using the mapper options will throw a `"Method ... not implemented"` error.
 
 * **Create** - create a new model.
   * `create(model)` - receive a model as argument, and should return it
@@ -140,6 +166,26 @@ All CRUD methods must be yieldable.
   * `delete(model)` - receive the model to delete and return a boolean status
   * `deleteAll(filter)` - receive a filter and delete all matching models, and
     return the number of models deleted.
+
+
+### Mapper Events
+
+The module itself extends `events.EventEmitter` and will emit two events; `define`
+and `create`.
+
+* `define` handlers will receive an object as first argument, where `mapperName` is
+  the actual mapper name (fully qualified), `namespace` is the mapper's namespace, 
+  `typeName` the relative name (used to create the mapper's constructor name),
+  `prototype` is the actual mapper's prototype before it get's frozen, and `options`
+  is the unmodified options object.
+* `create` handlers will receive an object as first argument, where `typeName` is the
+  mapper's relative name, and `instance` is the newly created mapper's instance.
+  **Note**: the event is emitted *before* the constructor is returned! Any error
+  thrown in a sync'ed emitter will fail at constructing the new mapper.
+
+Along with global events, the module's event emitter may be used to send any method's
+events for the mappers not specifying their own event emitters. See [Mapper Options](#mapper-options)'s
+events configuration.
 
 
 ## Connections
@@ -202,6 +248,8 @@ var client = yield (mapper.getAdapter)();
 * **get** *(name:String)*:*{mixed}* - a yieldable function returning the adapter's factory
   client instance.
 * **undefine** *(name:String)* - undefine a named connection.
+* **DEFAULT_EVENT_PATTERN** *{String}* - the default event pattern string.
+* **DEFAULT_EVENT_MAPPING** *{Object}* - the default event method mapping.
 
 
 ## Contribution
