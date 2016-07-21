@@ -364,7 +364,7 @@ describe('Mapper Test', function () {
 
         events.once('foo.bar.fooevent.123', function (e) {
           e.action.should.be.equal('fooEvent');
-          e.model.should.eql(model.toJson());
+          e.model.should.eql(model.toJSON());
           
           setImmediate(done);  // finalize
         });
@@ -403,7 +403,7 @@ describe('Mapper Test', function () {
 
         events.once('foo.bar.fooevent.456', function (e) {
           e.action.should.be.equal('fooEvent');
-          e.model.should.eql(model.toJson());
+          e.model.should.eql(model.toJSON());
           
           setImmediate(done);  // finalize
         });
